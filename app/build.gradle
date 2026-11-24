@@ -1,0 +1,75 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'app.gson'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'app.gson'
+        minSdk 23
+        targetSdk 36
+        versionCode 1
+        versionName '1.0.0'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+}
+
+tasks.register('restoreBundledFonts') {
+    File fontDirectory = rootProject.file("fontdata")
+    inputs.files(fileTree(fontDirectory) {
+        include('ulm_extrabold.*.b64')
+        include('ulm_medium.*.b64')
+    })
+    outputs.files(
+            file('src/main/res/font/ulm_extrabold.ttf'),
+            file('src/main/res/font/ulm_medium.ttf')
+    )
+    doLast {
+        ['ulm_extrabold', 'ulm_medium'].each { fontName ->
+            File destination = file("src/main/res/font/" + fontName + ".ttf")
+            if (destination.exists() && destination.length() > 0) return
+            List<File> chunks = fontDirectory.listFiles().findAll {
+                it.name.startsWith(fontName + ".") && it.name.endsWith(".b64")
+            }.sort { it.name }
+            if (chunks.isEmpty()) throw new GradleException("Missing bundled font chunks for " + fontName)
+            StringBuilder encodedText = new StringBuilder()
+            chunks.each { chunk -> encodedText.append(chunk.getText('UTF-8').trim()) }
+            byte[] compressed = java.util.Base64.decoder.decode(encodedText.toString())
+            destination.parentFile.mkdirs()
+            new java.util.zip.GZIPInputStream(new ByteArrayInputStream(compressed)).withCloseable { input ->
+                destination.withOutputStream { output -> input.transferTo(output) }
+            }
+        }
+    }
+}
+
+tasks.named('preBuild').configure {
+    dependsOn tasks.named('restoreBundledFonts')
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.8.0'
+    implementation 'androidx.core:core:1.16.0'
+    implementation 'com.google.android.material:material:1.14.0'
+    implementation 'com.google.code.gson:gson:2.13.2'
+
+    testImplementation 'junit:junit:4.13.2'
+}
