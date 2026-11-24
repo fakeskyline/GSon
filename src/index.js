@@ -1,1 +1,0 @@
-export default { async fetch(request, env) { const url = new URL(request.url); if (url.pathname === "/api/health") return Response.json({ name: "GSon", status: "ok", processing: "client-side-workers" }, { headers: { "Cache-Control": "no-store" } }); return env.ASSETS.fetch(request); } };
