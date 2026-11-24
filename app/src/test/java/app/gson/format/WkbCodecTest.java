@@ -39,7 +39,16 @@ public class WkbCodecTest {
                 """;
         JsonObject result = WkbCodec.decode(WkbCodec.encode(JsonParser.parseString(json).getAsJsonObject()));
         assertEquals(2, result.getAsJsonArray("coordinates").size());
-        assertEquals(3, result.getAsJsonArray("coordinates").get(1).getAsJsonArray().get(2).getAsInt());
+
+        com.google.gson.JsonArray firstPoint = result.getAsJsonArray("coordinates").get(0).getAsJsonArray();
+        assertEquals(1, firstPoint.get(0).getAsInt());
+        assertEquals(2, firstPoint.get(1).getAsInt());
+        assertEquals(3, firstPoint.get(2).getAsInt());
+
+        com.google.gson.JsonArray secondPoint = result.getAsJsonArray("coordinates").get(1).getAsJsonArray();
+        assertEquals(4, secondPoint.get(0).getAsInt());
+        assertEquals(5, secondPoint.get(1).getAsInt());
+        assertEquals(6, secondPoint.get(2).getAsInt());
     }
 
     @Test
