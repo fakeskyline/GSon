@@ -1,0 +1,10 @@
+.git/**
+.github/**
+engine/**
+src/**
+node_modules/**
+build/**
+*.zip
+*.log
+wrangler.jsonc
+.assetsignore
