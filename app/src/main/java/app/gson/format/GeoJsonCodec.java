@@ -194,7 +194,7 @@ public final class GeoJsonCodec {
         dimension[0] = position.size();
         for (JsonElement ordinate : position) {
             if (!ordinate.isJsonPrimitive() || !ordinate.getAsJsonPrimitive().isNumber()
-                    || !Double.isFinite(ordinate.getAsDouble())) {
+                    || (Double.isNaN(ordinate.getAsDouble()) || Double.isInfinite(ordinate.getAsDouble()))) {
                 throw new IOException("Координаты должны содержать только конечные числовые значения.");
             }
         }

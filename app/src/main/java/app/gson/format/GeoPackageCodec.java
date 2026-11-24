@@ -87,7 +87,7 @@ public final class GeoPackageCodec {
         boolean completed = false;
         try {
             if (file.exists() && !file.delete()) throw new IOException("Не удалось подготовить файл GeoPackage для записи.");
-            database = SQLiteDatabase.openOrCreateDatabase(file, null);
+            database = SQLiteDatabase.openOrCreateDatabase(file.getAbsolutePath(), null);
             database.setForeignKeyConstraintsEnabled(true);
             database.execSQL("PRAGMA application_id = " + APPLICATION_ID);
             database.execSQL("PRAGMA user_version = " + USER_VERSION);
@@ -261,7 +261,7 @@ public final class GeoPackageCodec {
                 else if (value.getAsJsonPrimitive().isString()) current = "TEXT";
                 else if (value.getAsJsonPrimitive().isNumber()) {
                     double number = value.getAsDouble();
-                    current = Double.isFinite(number) && number == Math.rint(number) ? "INTEGER" : "REAL";
+                    current = !Double.isNaN(number) && !Double.isInfinite(number) && number == Math.rint(number) ? "INTEGER" : "REAL";
                 } else current = "TEXT";
             } else current = "TEXT";
             if (found == null) found = current;
@@ -543,7 +543,7 @@ public final class GeoPackageCodec {
                 if (array.size() < 2) throw new IOException("В координате меньше двух значений.");
                 double x = array.get(0).getAsDouble();
                 double y = array.get(1).getAsDouble();
-                if (!Double.isFinite(x) || !Double.isFinite(y)) throw new IOException("Координаты содержат некорректные значения.");
+                if (Double.isNaN(x) || Double.isInfinite(x) || Double.isNaN(y) || Double.isInfinite(y)) throw new IOException("Координаты содержат некорректные значения.");
                 minX = Math.min(minX, x);
                 minY = Math.min(minY, y);
                 maxX = Math.max(maxX, x);

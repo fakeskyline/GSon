@@ -133,7 +133,7 @@ public final class WkbCodec {
                 throw new IOException("Координаты должны содержать только числа.");
             }
             double value = ordinate.getAsDouble();
-            if (!Double.isFinite(value)) throw new IOException("Координата содержит бесконечное или некорректное значение.");
+            if ((Double.isNaN(value) || Double.isInfinite(value))) throw new IOException("Координата содержит бесконечное или некорректное значение.");
             writeLongLE(out, Double.doubleToLongBits(value));
         }
     }

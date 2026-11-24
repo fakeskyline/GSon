@@ -220,7 +220,7 @@ public final class KmlCodec {
             for (String ordinate : ordinates) {
                 try {
                     double number = Double.parseDouble(ordinate.trim());
-                    if (!Double.isFinite(number)) throw new NumberFormatException("not finite");
+                    if ((Double.isNaN(number) || Double.isInfinite(number))) throw new NumberFormatException("not finite");
                     coordinate.add(new JsonPrimitive(number));
                 } catch (NumberFormatException exception) {
                     throw new IOException("Некорректное числовое значение координаты KML: " + ordinate);
