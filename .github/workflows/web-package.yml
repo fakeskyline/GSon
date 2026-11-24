@@ -10,8 +10,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - name: Install Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.74
+          actions-cache-folder: emsdk-cache
+      - name: Compile C++ WebAssembly engine
+        run: |
+          mkdir -p build
+          em++ engine/geo_engine.cpp -O3 -flto -fno-exceptions -fno-rtti \
+            -sWASM=1 -sMODULARIZE=1 -sEXPORT_NAME=createGeoEngine \
+            -sENVIRONMENT=worker -sALLOW_MEMORY_GROWTH=1 \
+            -sEXPORTED_FUNCTIONS='["_validate_json","_get_error_offset","_malloc","_free"]' \
+            -sEXPORTED_RUNTIME_METHODS='["lengthBytesUTF8","stringToUTF8"]' \
+            -o build/geo-engine.js
+          cp build/geo-engine.js build/geo-engine.wasm .
       - name: Package web application
-        run: zip -qr GSon-Web.zip index.html styles.css app.js manifest.webmanifest sw.js vendor fonts README.md LICENSE
+        run: zip -qr GSon-Web.zip index.html styles.css app.js manifest.webmanifest sw.js geo-worker.js favicon.svg geo-engine.js geo-engine.wasm vendor fonts README.md LICENSE
       - uses: actions/upload-artifact@v4
         with:
           name: GSon-Web
