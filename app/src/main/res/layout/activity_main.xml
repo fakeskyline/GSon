@@ -107,7 +107,7 @@
                                 android:textColor="@color/on_surface"
                                 android:textSize="15sp"
                                 android:fontFamily="@font/ulm_medium"
-                                android:maxLines="2"
+                                android:maxLines="1"
                                 android:ellipsize="middle" />
 
                             <TextView

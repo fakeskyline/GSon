@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#C4C6FF</color>
-    <color name="on_primary">#292A60</color>
-    <color name="primary_container">#41437A</color>
-    <color name="on_primary_container">#E3E1FF</color>
-    <color name="secondary">#C4C5DD</color>
-    <color name="on_secondary">#292A3D</color>
-    <color name="surface">#0B0E14</color>
-    <color name="surface_container_low">#121720</color>
-    <color name="surface_container">#1B2230</color>
-    <color name="on_surface">#E5E7F0</color>
-    <color name="on_surface_variant">#B8BECE</color>
-    <color name="outline_variant">#41495B</color>
-    <color name="error">#FFB4AB</color>
+    <color name="primary">#D0BCFF</color>
+    <color name="on_primary">#381E72</color>
+    <color name="primary_container">#4F378A</color>
+    <color name="on_primary_container">#EADDFF</color>
+    <color name="secondary">#CCC2DC</color>
+    <color name="on_secondary">#332D41</color>
+    <color name="surface">#111016</color>
+    <color name="surface_container_low">#19171F</color>
+    <color name="surface_container">#211F27</color>
+    <color name="on_surface">#E6E0E9</color>
+    <color name="on_surface_variant">#CAC4D0</color>
+    <color name="outline_variant">#49454F</color>
+    <color name="error">#F2B8B5</color>
     <color name="white">#FFFFFF</color>
-    <color name="dropdown_surface">#242D3D</color>
+    <color name="dropdown_surface">#292630</color>
 </resources>
