@@ -16,6 +16,8 @@ import org.w3c.dom.NodeList;
 import org.xmlpull.v1.XmlSerializer;
 
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -27,6 +29,7 @@ import java.util.List;
 public final class KmlCodec {
     private static final String KML_NS = "http://www.opengis.net/kml/2.2";
     private static final int MAX_PLACEMARKS = 2_000_000;
+    private static final int MAX_KML_BYTES = 256 * 1024 * 1024;
 
     private KmlCodec() {}
 
@@ -39,7 +42,8 @@ public final class KmlCodec {
             setFeature(factory, "http://apache.org/xml/features/disallow-doctype-decl", true);
             setFeature(factory, "http://xml.org/sax/features/external-general-entities", false);
             setFeature(factory, "http://xml.org/sax/features/external-parameter-entities", false);
-            Document document = factory.newDocumentBuilder().parse(input);
+            byte[] xml = readXmlBytes(input);
+            Document document = factory.newDocumentBuilder().parse(new ByteArrayInputStream(normalizeXmlDeclaration(xml)));
             Element root = document.getDocumentElement();
             if (root == null || !"kml".equals(localName(root))) {
                 throw new IOException("Файл не является документом KML.");
@@ -80,6 +84,32 @@ public final class KmlCodec {
             throw new IOException("Не удалось прочитать KML: "
                     + (message == null || message.trim().isEmpty() ? exception.getClass().getSimpleName() : message), exception);
         }
+    }
+
+    private static byte[] readXmlBytes(InputStream input) throws IOException {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        byte[] buffer = new byte[16 * 1024];
+        int count;
+        while ((count = input.read(buffer)) != -1) {
+            if ((long) output.size() + count > MAX_KML_BYTES) {
+                throw new IOException("KML превышает допустимый размер 256 МБ.");
+            }
+            output.write(buffer, 0, count);
+        }
+        return output.toByteArray();
+    }
+
+    private static byte[] normalizeXmlDeclaration(byte[] xml) {
+        String content = new String(xml, StandardCharsets.ISO_8859_1);
+        java.util.regex.Matcher matcher = java.util.regex.Pattern
+                .compile("(?i)(<\\?xml\\s+version\\s*=\\s*['\"])0\\.0(['\"])")
+                .matcher(content);
+        if (!matcher.find()) return xml;
+        StringBuffer normalized = new StringBuffer();
+        matcher.appendReplacement(normalized, java.util.regex.Matcher.quoteReplacement(
+                matcher.group(1) + "1.0" + matcher.group(2)));
+        matcher.appendTail(normalized);
+        return normalized.toString().getBytes(StandardCharsets.ISO_8859_1);
     }
 
     public static void write(GeoDataset dataset, OutputStream output) throws IOException {

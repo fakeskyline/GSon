@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
 import android.view.View;
+import android.graphics.drawable.ColorDrawable;
 import android.widget.ArrayAdapter;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -16,6 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
+import androidx.core.view.WindowCompat;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
@@ -72,6 +74,7 @@ public final class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
         setContentView(R.layout.activity_main);
 
         MaterialToolbar toolbar = findViewById(R.id.toolbar);
@@ -93,6 +96,13 @@ public final class MainActivity extends AppCompatActivity {
         ArrayAdapter<String> formatsAdapter = new ArrayAdapter<>(this, R.layout.dropdown_item, formatLabels);
         sourceFormatField.setAdapter(formatsAdapter);
         targetFormatField.setAdapter(new ArrayAdapter<>(this, R.layout.dropdown_item, formatLabels));
+        int dropdownColor = getColor(R.color.dropdown_surface);
+        sourceFormatField.setDropDownBackgroundDrawable(new ColorDrawable(dropdownColor));
+        targetFormatField.setDropDownBackgroundDrawable(new ColorDrawable(dropdownColor));
+        sourceFormatField.setDropDownVerticalOffset(dp(6));
+        targetFormatField.setDropDownVerticalOffset(dp(6));
+        sourceFormatField.setOnClickListener(view -> sourceFormatField.showDropDown());
+        targetFormatField.setOnClickListener(view -> targetFormatField.showDropDown());
         sourceFormatField.setText(GeoFormat.GEOJSON.label, false);
         targetFormatField.setText(GeoFormat.GPKG.label, false);
 
@@ -209,6 +219,8 @@ public final class MainActivity extends AppCompatActivity {
         statusText.setText(message);
         statusText.setTextColor(getColor(error ? R.color.error : R.color.on_surface_variant));
     }
+
+    private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
 
     private static GeoFormat findFormat(String label) {
         for (GeoFormat format : GeoFormat.values()) if (format.label.equals(label)) return format;
