@@ -14,10 +14,23 @@ $("resetBtn").addEventListener("click",()=>{inputFile=null;outputBlob=null;outpu
 $("downloadBtn").addEventListener("click",()=>{if(!outputBlob)return;const a=document.createElement("a"),url=URL.createObjectURL(outputBlob);a.href=url;a.download=outputName;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);});
 $("convertBtn").addEventListener("click",convert);
 $("aboutBtn").addEventListener("click",()=>$("aboutDialog").showModal());$("closeAbout").addEventListener("click",()=>$("aboutDialog").close());
+async function runGeoWorker(action,payload){
+ if(typeof Worker==="undefined"){
+  if(action==="parse")return readGeoJson(payload.text,payload.name);
+  return JSON.stringify(payload.data,null,2);
+ }
+ return new Promise((resolve,reject)=>{
+  const worker=new Worker("geo-worker.js?v=5");
+  const timer=setTimeout(()=>{worker.terminate();reject(Error("Обработка файла заняла слишком много времени. Попробуй файл меньшего размера."));},120000);
+  worker.onmessage=e=>{clearTimeout(timer);worker.terminate();if(e.data&&e.data.error)reject(Error(e.data.error));else resolve(e.data.result);};
+  worker.onerror=e=>{clearTimeout(timer);worker.terminate();reject(Error("Ошибка фонового обработчика: "+(e.message||"неизвестная ошибка")));};
+  worker.postMessage({action,payload});
+ });
+}
 async function convert(){if(!inputFile)return;const source=$("sourceFormat").value==="auto"?detect(inputFile.name):$("sourceFormat").value,target=$("targetFormat").value;if(!source)return say("Не удалось определить формат исходного файла.","error");if(source===target)return say("Исходный и целевой форматы совпадают. Выбери другой формат.","error");$("convertBtn").disabled=true;$("convertBtn").innerHTML='<span class="convert-glyph">◌</span> Обработка…';say("Читаю файл и проверяю геометрию…","loading");
-try{let data;if(source==="GPKG")data=await readGpkg(await inputFile.arrayBuffer());else if(source==="KMZ")data=await readKmz(await inputFile.arrayBuffer());else if(source==="KML")data=readKml(await inputFile.text(),inputFile.name);else data=readGeoJson(await inputFile.text(),inputFile.name);
+try{let data;if(source==="GPKG")data=await readGpkg(await inputFile.arrayBuffer());else if(source==="KMZ")data=await readKmz(await inputFile.arrayBuffer());else if(source==="KML")data=readKml(await inputFile.text(),inputFile.name);else data=await runGeoWorker("parse",{text:await inputFile.text(),name:inputFile.name});
 say("Объектов: "+countFeatures(data)+" · слоёв: "+data.layers.length+". Формирую "+target+"…","loading");
-let blob;if(target==="GEOJSON")blob=new Blob([JSON.stringify(writeGeoJson(data),null,2)],{type:"application/geo+json"});else if(target==="KML")blob=new Blob([writeKml(data)],{type:"application/vnd.google-earth.kml+xml"});else if(target==="KMZ"){const zip=new JSZip();zip.file("doc.kml",writeKml(data));blob=await zip.generateAsync({type:"blob",compression:"DEFLATE",compressionOptions:{level:6}});}else blob=new Blob([await writeGpkg(data)],{type:"application/geopackage+sqlite3"});
+let blob;if(target==="GEOJSON")blob=new Blob([await runGeoWorker("stringify",{data:writeGeoJson(data)})],{type:"application/geo+json"});else if(target==="KML")blob=new Blob([writeKml(data)],{type:"application/vnd.google-earth.kml+xml"});else if(target==="KMZ"){const zip=new JSZip();zip.file("doc.kml",writeKml(data));blob=await zip.generateAsync({type:"blob",compression:"DEFLATE",compressionOptions:{level:6}});}else blob=new Blob([await writeGpkg(data)],{type:"application/geopackage+sqlite3"});
 const base=inputFile.name.replace(/\.[^.]+$/,"").replace(/[\\/:*?"<>|]/g,"_")||"converted";outputName=base+"."+({GEOJSON:"geojson",GPKG:"gpkg",KML:"kml",KMZ:"kmz"}[target]);outputBlob=blob;$("resultName").textContent=outputName;$("resultMeta").textContent=formatBytes(blob.size)+" · "+countFeatures(data)+" объектов · "+data.layers.length+" слоёв";$("resultSummary").textContent="Конвертация завершена. Файл готов к сохранению.";$("resultFile").hidden=false;$("downloadBtn").disabled=false;say("Готово. Данные обработаны локально, файл можно скачать.","success");$("resultCard").scrollIntoView({behavior:"smooth",block:"nearest"});toast("Конвертация завершена");}
 catch(e){console.error(e);say(errorText(e),"error");$("resultSummary").textContent="Не удалось создать результат.";$("resultFile").hidden=true;$("downloadBtn").disabled=true;}
 finally{$("convertBtn").disabled=false;$("convertBtn").innerHTML='<span class="convert-glyph">⟳</span> Конвертировать <span class="button-arrow">↗</span>';}}
