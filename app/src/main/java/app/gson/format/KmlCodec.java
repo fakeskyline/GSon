@@ -99,17 +99,65 @@ public final class KmlCodec {
         return output.toByteArray();
     }
 
-    private static byte[] normalizeXmlDeclaration(byte[] xml) {
-        String content = new String(xml, StandardCharsets.ISO_8859_1);
-        java.util.regex.Matcher matcher = java.util.regex.Pattern
-                .compile("(?i)(<\\?xml\\s+version\\s*=\\s*['\"])0\\.0(['\"])")
-                .matcher(content);
-        if (!matcher.find()) return xml;
-        StringBuffer normalized = new StringBuffer();
-        matcher.appendReplacement(normalized, java.util.regex.Matcher.quoteReplacement(
-                matcher.group(1) + "1.0" + matcher.group(2)));
-        matcher.appendTail(normalized);
-        return normalized.toString().getBytes(StandardCharsets.ISO_8859_1);
+    private static byte[] normalizeXmlDeclaration(byte[] xml) throws IOException {
+        java.nio.charset.Charset charset = StandardCharsets.UTF_8;
+        int offset = 0;
+
+        if (xml.length >= 4 && (xml[0] & 0xFF) == 0x00 && (xml[1] & 0xFF) == 0x00
+                && (xml[2] & 0xFF) == 0xFE && (xml[3] & 0xFF) == 0xFF) {
+            charset = java.nio.charset.Charset.forName("UTF-32BE");
+            offset = 4;
+        } else if (xml.length >= 4 && (xml[0] & 0xFF) == 0xFF && (xml[1] & 0xFF) == 0xFE
+                && (xml[2] & 0xFF) == 0x00 && (xml[3] & 0xFF) == 0x00) {
+            charset = java.nio.charset.Charset.forName("UTF-32LE");
+            offset = 4;
+        } else if (xml.length >= 3 && (xml[0] & 0xFF) == 0xEF
+                && (xml[1] & 0xFF) == 0xBB && (xml[2] & 0xFF) == 0xBF) {
+            offset = 3;
+        } else if (xml.length >= 2 && (xml[0] & 0xFF) == 0xFE && (xml[1] & 0xFF) == 0xFF) {
+            charset = StandardCharsets.UTF_16BE;
+            offset = 2;
+        } else if (xml.length >= 2 && (xml[0] & 0xFF) == 0xFF && (xml[1] & 0xFF) == 0xFE) {
+            charset = StandardCharsets.UTF_16LE;
+            offset = 2;
+        } else if (xml.length >= 4 && xml[0] == 0x00 && xml[1] == 0x00
+                && xml[2] == 0x00 && xml[3] == '<') {
+            charset = java.nio.charset.Charset.forName("UTF-32BE");
+        } else if (xml.length >= 4 && xml[0] == '<' && xml[1] == 0x00
+                && xml[2] == 0x00 && xml[3] == 0x00) {
+            charset = java.nio.charset.Charset.forName("UTF-32LE");
+        } else if (xml.length >= 4 && xml[0] == 0x00 && xml[1] == '<'
+                && xml[2] == 0x00 && xml[3] == '?') {
+            charset = StandardCharsets.UTF_16BE;
+        } else if (xml.length >= 4 && xml[0] == '<' && xml[1] == 0x00
+                && xml[2] == '?' && xml[3] == 0x00) {
+            charset = StandardCharsets.UTF_16LE;
+        } else {
+            String prolog = new String(xml, 0, Math.min(xml.length, 256), StandardCharsets.US_ASCII);
+            java.util.regex.Matcher encoding = java.util.regex.Pattern
+                    .compile("(?i)encoding\\s*=\\s*['\"]([^'\"]+)['\"]")
+                    .matcher(prolog);
+            if (encoding.find()) {
+                try {
+                    charset = java.nio.charset.Charset.forName(encoding.group(1));
+                } catch (Exception exception) {
+                    throw new IOException("Неизвестная кодировка KML: " + encoding.group(1), exception);
+                }
+            }
+        }
+
+        String document = new String(xml, offset, xml.length - offset, charset);
+        if (!document.isEmpty() && document.charAt(0) == '\uFEFF') {
+            document = document.substring(1);
+        }
+
+        java.util.regex.Matcher declaration = java.util.regex.Pattern
+                .compile("(?is)^\\s*<\\?xml\\s+.*?\\?>")
+                .matcher(document);
+        if (declaration.find()) {
+            document = document.substring(declaration.end());
+        }
+        return document.getBytes(StandardCharsets.UTF_8);
     }
 
     public static void write(GeoDataset dataset, OutputStream output) throws IOException {
