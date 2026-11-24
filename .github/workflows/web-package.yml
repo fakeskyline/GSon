@@ -11,9 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Package web application
-        run: |
-          test -f fonts/nunito.ttf
-          zip -qr GSon-Web.zip index.html styles.css app.js manifest.webmanifest sw.js vendor fonts README.md LICENSE
+        run: zip -qr GSon-Web.zip index.html styles.css app.js manifest.webmanifest sw.js vendor fonts README.md LICENSE
       - uses: actions/upload-artifact@v4
         with:
           name: GSon-Web
