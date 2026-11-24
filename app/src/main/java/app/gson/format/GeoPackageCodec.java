@@ -226,7 +226,12 @@ public final class GeoPackageCodec {
         LinkedHashMap<String, List<JsonElement>> values = new LinkedHashMap<>();
         for (GeoDataset.Feature feature : features) {
             for (Map.Entry<String, JsonElement> entry : feature.properties.entrySet()) {
-                values.computeIfAbsent(entry.getKey(), key -> new ArrayList<>()).add(entry.getValue());
+                List<JsonElement> propertyValues = values.get(entry.getKey());
+                if (propertyValues == null) {
+                    propertyValues = new ArrayList<>();
+                    values.put(entry.getKey(), propertyValues);
+                }
+                propertyValues.add(entry.getValue());
             }
         }
         Set<String> usedNames = new HashSet<>();
