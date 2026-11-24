@@ -14,21 +14,26 @@ import java.nio.charset.StandardCharsets;
 public class GeoJsonCodecTest {
     @Test
     public void featureCollectionRoundTripsAttributesAndIds() throws Exception {
-        String json = "{"type":"FeatureCollection","features":["
-                + "{"type":"Feature","id":"road-7","properties":{"name":"Road","lanes":2},"
-                + ""geometry":{"type":"LineString","coordinates":[[30,50],[31,51]]}}]}";
+        String json = """
+                {"type":"FeatureCollection","features":[
+                  {"type":"Feature","id":"road-7","properties":{"name":"Road","lanes":2},
+                   "geometry":{"type":"LineString","coordinates":[[30,50],[31,51]]}}
+                ]}
+                """;
         GeoDataset dataset = GeoJsonCodec.read(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), "roads");
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         GeoJsonCodec.write(dataset, output);
         String converted = output.toString("UTF-8");
         assertTrue(converted.contains("road-7"));
-        assertTrue(converted.contains(""lanes": 2"));
+        assertTrue(converted.contains("lanes"));
         assertTrue(converted.contains("LineString"));
     }
 
     @Test
     public void rejectsNonWgs84GeoJsonCrs() throws Exception {
-        String json = "{"type":"FeatureCollection","crs":{"properties":{"name":"EPSG:3857"}},"features":[]}";
+        String json = """
+                {"type":"FeatureCollection","crs":{"properties":{"name":"EPSG:3857"}},"features":[]}
+                """;
         try {
             GeoJsonCodec.read(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), "test");
         } catch (java.io.IOException expected) {

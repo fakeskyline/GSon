@@ -11,7 +11,9 @@ import org.junit.Test;
 public class WkbCodecTest {
     @Test
     public void pointRoundTrips() throws Exception {
-        JsonObject source = JsonParser.parseString("{"type":"Point","coordinates":[30.5,50.45]}").getAsJsonObject();
+        JsonObject source = JsonParser.parseString("""
+                {"type":"Point","coordinates":[30.5,50.45]}
+                """).getAsJsonObject();
         JsonObject result = WkbCodec.decode(WkbCodec.encode(source));
         assertEquals("Point", result.get("type").getAsString());
         assertEquals(30.5, result.getAsJsonArray("coordinates").get(0).getAsDouble(), 0.000001);
@@ -20,16 +22,21 @@ public class WkbCodecTest {
 
     @Test
     public void polygonWithHolesRoundTrips() throws Exception {
-        String json = "{"type":"Polygon","coordinates":["
-                + "[[0,0],[10,0],[10,10],[0,10],[0,0]],"
-                + "[[2,2],[4,2],[4,4],[2,4],[2,2]]] }";
+        String json = """
+                {"type":"Polygon","coordinates":[
+                  [[0,0],[10,0],[10,10],[0,10],[0,0]],
+                  [[2,2],[4,2],[4,4],[2,4],[2,2]]
+                ]}
+                """;
         JsonObject result = WkbCodec.decode(WkbCodec.encode(JsonParser.parseString(json).getAsJsonObject()));
         assertEquals(2, result.getAsJsonArray("coordinates").size());
     }
 
     @Test
     public void multiGeometryAndZValuesRoundTrip() throws Exception {
-        String json = "{"type":"MultiPoint","coordinates":[[1,2,3],[4,5,6]]}";
+        String json = """
+                {"type":"MultiPoint","coordinates":[[1,2,3],[4,5,6]]}
+                """;
         JsonObject result = WkbCodec.decode(WkbCodec.encode(JsonParser.parseString(json).getAsJsonObject()));
         assertEquals(2, result.getAsJsonArray("coordinates").size());
         assertEquals(3, result.getAsJsonArray("coordinates").get(1).getAsJsonArray().get(2).getAsInt());
@@ -37,7 +44,9 @@ public class WkbCodecTest {
 
     @Test
     public void truncatedWkbIsRejected() throws Exception {
-        byte[] wkb = WkbCodec.encode(JsonParser.parseString("{"type":"Point","coordinates":[1,2]}").getAsJsonObject());
+        byte[] wkb = WkbCodec.encode(JsonParser.parseString("""
+                {"type":"Point","coordinates":[1,2]}
+                """).getAsJsonObject());
         byte[] truncated = new byte[wkb.length - 1];
         System.arraycopy(wkb, 0, truncated, 0, truncated.length);
         try {
